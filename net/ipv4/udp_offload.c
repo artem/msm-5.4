@@ -452,9 +452,20 @@ struct sk_buff *udp_gro_receive(struct list_head *head, struct sk_buff *skb,
 	struct udphdr *uh2;
 	unsigned int off = skb_gro_offset(skb);
 	int flush = 1;
+	struct sock *sk2 = NULL;
+
+	/* WA for UDP GRO fraglist.
+	 * check sk to use UDP GRO for local only.
+	 */
+	if (!sk) {
+		if (NAPI_GRO_CB(skb)->is_ipv6)
+			sk2 = udp6_lib_lookup_skb(skb, uh->source, uh->dest);
+		else
+			sk2 = udp4_lib_lookup_skb(skb, uh->source, uh->dest);
+	}
 
 	NAPI_GRO_CB(skb)->is_flist = 0;
-	if (skb->dev->features & NETIF_F_GRO_FRAGLIST)
+	if ((sk || sk2) && (skb->dev->features & NETIF_F_GRO_FRAGLIST))
 		NAPI_GRO_CB(skb)->is_flist = sk ? !udp_sk(sk)->gro_enabled: 1;
 
 	if ((sk && udp_sk(sk)->gro_enabled) || NAPI_GRO_CB(skb)->is_flist) {

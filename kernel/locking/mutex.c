@@ -29,6 +29,7 @@
 #include <linux/interrupt.h>
 #include <linux/debug_locks.h>
 #include <linux/osq_lock.h>
+#include <linux/sec_debug.h>
 
 #ifdef CONFIG_DEBUG_MUTEXES
 # include "mutex-debug.h"
@@ -1005,6 +1006,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
 	waiter.task = current;
 
 	trace_android_vh_mutex_wait_start(lock);
+	secdbg_dtsk_built_set_data(DTYPE_MUTEX, (void *)lock);
 	set_current_state(state);
 	for (;;) {
 		/*
@@ -1061,6 +1063,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
 acquired:
 	__set_current_state(TASK_RUNNING);
 	trace_android_vh_mutex_wait_finish(lock);
+	secdbg_dtsk_built_set_data(DTYPE_NONE, NULL);
 
 	if (use_ww_ctx && ww_ctx) {
 		/*
@@ -1092,6 +1095,7 @@ skip_wait:
 err:
 	__set_current_state(TASK_RUNNING);
 	trace_android_vh_mutex_wait_finish(lock);
+	secdbg_dtsk_built_set_data(DTYPE_NONE, NULL);
 	mutex_remove_waiter(lock, &waiter, current);
 err_early_kill:
 	spin_unlock(&lock->wait_lock);

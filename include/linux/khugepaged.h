@@ -15,7 +15,7 @@ extern int __khugepaged_enter(struct mm_struct *mm);
 extern void __khugepaged_exit(struct mm_struct *mm);
 extern int khugepaged_enter_vma_merge(struct vm_area_struct *vma,
 				      unsigned long vm_flags);
-#ifdef CONFIG_SHMEM
+#if defined(CONFIG_SHMEM) && defined(CONFIG_TRANSPARENT_HUGE_PAGECACHE)
 extern void collapse_pte_mapped_thp(struct mm_struct *mm, unsigned long addr);
 #else
 static inline void collapse_pte_mapped_thp(struct mm_struct *mm,
@@ -24,10 +24,14 @@ static inline void collapse_pte_mapped_thp(struct mm_struct *mm,
 }
 #endif
 
+#ifdef CONFIG_HUGEPAGE_POOL
+#define khugepaged_enabled() (0)
+#else
 #define khugepaged_enabled()					       \
 	(transparent_hugepage_flags &				       \
 	 ((1<<TRANSPARENT_HUGEPAGE_FLAG) |		       \
 	  (1<<TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG)))
+#endif
 #define khugepaged_always()				\
 	(transparent_hugepage_flags &			\
 	 (1<<TRANSPARENT_HUGEPAGE_FLAG))
